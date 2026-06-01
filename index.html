@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Valuation Checker</title>
+    <!-- Google Search Console Verification Placeholder -->
+    <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" />
+    <style>
+        :root {
+            --bg-color: #0a0e1a;
+            --card-bg: #161f35;
+            --border-color: #1e2d4a;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #7c3aed;
+            --gold: #f59e0b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .badge-pill {
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid var(--accent-purple);
+            color: var(--accent-purple);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-bar {
+            display: flex;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.5rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--accent-cyan);
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        .search-btn:hover {
+            opacity: 0.9;
+        }
+
+        .search-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 0.5rem;
+            z-index: 100;
+            max-height: 320px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .chip {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .chip:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        #error-msg {
+            color: #f87171;
+            text-align: center;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .result-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .flag-large {
+            font-size: 58px;
+            line-height: 1;
+        }
+
+        .hero-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .hero-header h2 {
+            font-size: 2rem;
+        }
+
+        .tag-container {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: rgba(255,255,255,0.05);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .gdp-rank-badge {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .rank-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+        }
+
+        .rank-value {
+            font-size: 1.2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .economy-overview {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .economy-overview h3 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255,255,255,0.05);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple));
+            border-radius: 4px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .info-box h4 {
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .info-key {
+            color: var(--text-muted);
+        }
+
+        .income-tag {
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .hero-card { padding: 1.5rem; }
+            .gdp-rank-badge { position: static; margin-top: 1rem; width: fit-content; }
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="badge-pill">Global Economy Database 2026</div>
+            <h1>Country Valuation Checker</h1>
+            <p class="subtitle">Real-time economic metrics and geographic data</p>
+        </header>
+
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" id="country-input" placeholder="Search for a country..." autocomplete="off">
+                <button class="search-btn" id="search-btn">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </button>
+            </div>
+            <div class="autocomplete-dropdown" id="dropdown"></div>
+            <div class="quick-chips" id="quick-chips"></div>
+            <div id="error-msg">Country not found. Please try another name.</div>
+        </div>
+
+        <div id="result-container"></div>
+
+        <footer>
+            Dataset Credit: World Bank, IMF & Economic Data Hub (2026 Estimates)
+        </footer>
+    </div>
+
+    <script>
+        // DATABASE: [name, iso2, capital, region, subregion, population, gdpBillions, currency, currencyCode, languages, areakm2, timezone]
+        const DB = [["Afghanistan", "AF", "Kabul", "Asia", "Southern Asia", 42000000, 14, "Afghani", "AFN", "Pashto, Dari", 652230, "UTC+04:30"], ["Albania", "AL", "Tirana", "Europe", "Southern Europe", 2800000, 23, "Lek", "ALL", "Albanian", 28748, "UTC+01:00"], ["Algeria", "DZ", "Algiers", "Africa", "Northern Africa", 46000000, 240, "Algerian Dinar", "DZD", "Arabic", 2381741, "UTC+01:00"], ["Angola", "AO", "Luanda", "Africa", "Middle Africa", 36000000, 100, "Kwanza", "AOA", "Portuguese", 1246700, "UTC+01:00"], ["Argentina", "AR", "Buenos Aires", "Americas", "South America", 46000000, 650, "Argentine Peso", "ARS", "Spanish", 2780400, "UTC-03:00"], ["Armenia", "AM", "Yerevan", "Asia", "Western Asia", 2800000, 24, "Dram", "AMD", "Armenian", 29743, "UTC+04:00"], ["Australia", "AU", "Canberra", "Oceania", "Australia and New Zealand", 26000000, 1700, "Australian Dollar", "AUD", "English", 7692024, "UTC+10:00"], ["Austria", "AT", "Vienna", "Europe", "Western Europe", 9000000, 520, "Euro", "EUR", "German", 83871, "UTC+01:00"], ["Azerbaijan", "AZ", "Baku", "Asia", "Western Asia", 10200000, 78, "Azerbaijan Manat", "AZN", "Azerbaijani", 86600, "UTC+04:00"], ["Bahrain", "BH", "Manama", "Asia", "Western Asia", 1500000, 45, "Bahraini Dinar", "BHD", "Arabic", 765, "UTC+03:00"], ["Bangladesh", "BD", "Dhaka", "Asia", "Southern Asia", 173000000, 450, "Taka", "BDT", "Bengali", 147570, "UTC+06:00"], ["Belarus", "BY", "Minsk", "Europe", "Eastern Europe", 9200000, 73, "Belarusian Ruble", "BYN", "Belarusian, Russian", 207600, "UTC+03:00"], ["Belgium", "BE", "Brussels", "Europe", "Western Europe", 11700000, 600, "Euro", "EUR", "Dutch, French, German", 30528, "UTC+01:00"], ["Bolivia", "BO", "Sucre", "Americas", "South America", 12300000, 46, "Boliviano", "BOB", "Spanish, Quechua, Aymara", 1098581, "UTC-04:00"], ["Bosnia and Herzegovina", "BA", "Sarajevo", "Europe", "Southern Europe", 3200000, 28, "Convertible Mark", "BAM", "Bosnian, Croatian, Serbian", 51197, "UTC+01:00"], ["Botswana", "BW", "Gaborone", "Africa", "Southern Africa", 2600000, 21, "Pula", "BWP", "English, Setswana", 581730, "UTC+02:00"], ["Brazil", "BR", "Bras\u00edlia", "Americas", "South America", 216000000, 2100, "Brazilian Real", "BRL", "Portuguese", 8515767, "UTC-03:00"], ["Bulgaria", "BG", "Sofia", "Europe", "Eastern Europe", 6400000, 100, "Lev", "BGN", "Bulgarian", 110879, "UTC+02:00"], ["Burkina Faso", "BF", "Ouagadougou", "Africa", "Western Africa", 23000000, 21, "West African CFA franc", "XOF", "French", 272967, "UTC+00:00"], ["Cambodia", "KH", "Phnom Penh", "Asia", "South-Eastern Asia", 17000000, 32, "Riel", "KHR", "Khmer", 181035, "UTC+07:00"], ["Cameroon", "CM", "Yaound\u00e9", "Africa", "Middle Africa", 28000000, 48, "Central African CFA franc", "XAF", "French, English", 475442, "UTC+01:00"], ["Canada", "CA", "Ottawa", "Americas", "North America", 40000000, 2200, "Canadian Dollar", "CAD", "English, French", 9984670, "UTC-05:00"], ["Chile", "CL", "Santiago", "Americas", "South America", 20000000, 340, "Chilean Peso", "CLP", "Spanish", 756102, "UTC-04:00"], ["China", "CN", "Beijing", "Asia", "Eastern Asia", 1410000000, 18500, "Yuan Renminbi", "CNY", "Mandarin", 9596961, "UTC+08:00"], ["Colombia", "CO", "Bogot\u00e1", "Americas", "South America", 52000000, 360, "Colombian Peso", "COP", "Spanish", 1141748, "UTC-05:00"], ["Congo", "CG", "Brazzaville", "Africa", "Middle Africa", 6100000, 15, "Central African CFA franc", "XAF", "French", 342000, "UTC+01:00"], ["Costa Rica", "CR", "San Jos\u00e9", "Americas", "Central America", 5200000, 85, "Col\u00f3n", "CRC", "Spanish", 51100, "UTC-06:00"], ["Croatia", "HR", "Zagreb", "Europe", "Southern Europe", 3800000, 80, "Euro", "EUR", "Croatian", 56594, "UTC+01:00"], ["Cuba", "CU", "Havana", "Americas", "Caribbean", 11000000, 107, "Cuban Peso", "CUP", "Spanish", 109884, "UTC-05:00"], ["Czech Republic", "CZ", "Prague", "Europe", "Eastern Europe", 10700000, 330, "Czech Koruna", "CZK", "Czech", 78867, "UTC+01:00"], ["DR Congo", "CD", "Kinshasa", "Africa", "Middle Africa", 102000000, 67, "Congolese Franc", "CDF", "French", 2344858, "UTC+01:00"], ["Denmark", "DK", "Copenhagen", "Europe", "Northern Europe", 5900000, 400, "Danish Krone", "DKK", "Danish", 43094, "UTC+01:00"], ["Dominican Republic", "DO", "Santo Domingo", "Americas", "Caribbean", 11300000, 120, "Dominican Peso", "DOP", "Spanish", 48671, "UTC-04:00"], ["Ecuador", "EC", "Quito", "Americas", "South America", 18000000, 120, "US Dollar", "USD", "Spanish", 283561, "UTC-05:00"], ["Egypt", "EG", "Cairo", "Africa", "Northern Africa", 112000000, 380, "Egyptian Pound", "EGP", "Arabic", 1002450, "UTC+02:00"], ["El Salvador", "SV", "San Salvador", "Americas", "Central America", 6300000, 35, "US Dollar", "USD", "Spanish", 21041, "UTC-06:00"], ["Ethiopia", "ET", "Addis Ababa", "Africa", "Eastern Africa", 126000000, 160, "Ethiopian Birr", "ETB", "Amharic", 1104300, "UTC+03:00"], ["Finland", "FI", "Helsinki", "Europe", "Northern Europe", 5500000, 300, "Euro", "EUR", "Finnish, Swedish", 338424, "UTC+02:00"], ["France", "FR", "Paris", "Europe", "Western Europe", 68000000, 3000, "Euro", "EUR", "French", 551695, "UTC+01:00"], ["Georgia", "GE", "Tbilisi", "Asia", "Western Asia", 3700000, 30, "Lari", "GEL", "Georgian", 69700, "UTC+04:00"], ["Germany", "DE", "Berlin", "Europe", "Western Europe", 84000000, 4500, "Euro", "EUR", "German", 357022, "UTC+01:00"], ["Ghana", "GH", "Accra", "Africa", "Western Africa", 34000000, 75, "Ghanaian Cedi", "GHS", "English", 238533, "UTC+00:00"], ["Greece", "GR", "Athens", "Europe", "Southern Europe", 10400000, 240, "Euro", "EUR", "Greek", 131957, "UTC+02:00"], ["Guatemala", "GT", "Guatemala City", "Americas", "Central America", 18000000, 100, "Quetzal", "GTQ", "Spanish", 108889, "UTC-06:00"], ["Haiti", "HT", "Port-au-Prince", "Americas", "Caribbean", 11700000, 14, "Gourde", "HTG", "French, Haitian Creole", 27750, "UTC-05:00"], ["Honduras", "HN", "Tegucigalpa", "Americas", "Central America", 10500000, 34, "Lempira", "HNL", "Spanish", 112492, "UTC-06:00"], ["Hungary", "HU", "Budapest", "Europe", "Eastern Europe", 9600000, 210, "Forint", "HUF", "Hungarian", 93028, "UTC+01:00"], ["Iceland", "IS", "Reykjav\u00edk", "Europe", "Northern Europe", 380000, 30, "Icelandic Kr\u00f3na", "ISK", "Icelandic", 103000, "UTC+00:00"], ["India", "IN", "New Delhi", "Asia", "Southern Asia", 1430000000, 3900, "Indian Rupee", "INR", "Hindi, English", 3287263, "UTC+05:30"], ["Indonesia", "ID", "Jakarta", "Asia", "South-Eastern Asia", 278000000, 1400, "Indonesian Rupiah", "IDR", "Indonesian", 1904569, "UTC+07:00"], ["Iran", "IR", "Tehran", "Asia", "Southern Asia", 89000000, 370, "Iranian Rial", "IRR", "Persian", 1648195, "UTC+03:30"], ["Iraq", "IQ", "Baghdad", "Asia", "Western Asia", 45000000, 250, "Iraqi Dinar", "IQD", "Arabic, Kurdish", 438317, "UTC+03:00"], ["Ireland", "IE", "Dublin", "Europe", "Northern Europe", 5200000, 550, "Euro", "EUR", "Irish, English", 70273, "UTC+00:00"], ["Israel", "IL", "Jerusalem", "Asia", "Western Asia", 9800000, 520, "New Israeli Shekel", "ILS", "Hebrew, Arabic", 20770, "UTC+02:00"], ["Italy", "IT", "Rome", "Europe", "Southern Europe", 59000000, 2200, "Euro", "EUR", "Italian", 301340, "UTC+01:00"], ["Ivory Coast", "CI", "Yamoussoukro", "Africa", "Western Africa", 29000000, 80, "West African CFA franc", "XOF", "French", 322463, "UTC+00:00"], ["Jamaica", "JM", "Kingston", "Americas", "Caribbean", 2800000, 19, "Jamaican Dollar", "JMD", "English", 10991, "UTC-05:00"], ["Japan", "JP", "Tokyo", "Asia", "Eastern Asia", 124000000, 4200, "Yen", "JPY", "Japanese", 377975, "UTC+09:00"], ["Jordan", "JO", "Amman", "Asia", "Western Asia", 11300000, 50, "Jordanian Dinar", "JOD", "Arabic", 89342, "UTC+02:00"], ["Kazakhstan", "KZ", "Astana", "Asia", "Central Asia", 20000000, 260, "Kazakhstani Tenge", "KZT", "Kazakh, Russian", 2724900, "UTC+06:00"], ["Kenya", "KE", "Nairobi", "Africa", "Eastern Africa", 55000000, 115, "Kenyan Shilling", "KES", "Swahili, English", 580367, "UTC+03:00"], ["Kuwait", "KW", "Kuwait City", "Asia", "Western Asia", 4300000, 160, "Kuwaiti Dinar", "KWD", "Arabic", 17818, "UTC+03:00"], ["Kyrgyzstan", "KG", "Bishkek", "Asia", "Central Asia", 7000000, 13, "Som", "KGS", "Kyrgyz, Russian", 199951, "UTC+06:00"], ["Laos", "LA", "Vientiane", "Asia", "South-Eastern Asia", 7600000, 15, "Kip", "LAK", "Lao", 236800, "UTC+07:00"], ["Lebanon", "LB", "Beirut", "Asia", "Western Asia", 5300000, 20, "Lebanese Pound", "LBP", "Arabic", 10452, "UTC+02:00"], ["Libya", "LY", "Tripoli", "Africa", "Northern Africa", 6800000, 45, "Libyan Dinar", "LYD", "Arabic", 1759540, "UTC+01:00"], ["Lithuania", "LT", "Vilnius", "Europe", "Northern Europe", 2800000, 78, "Euro", "EUR", "Lithuanian", 65300, "UTC+02:00"], ["Luxembourg", "LU", "Luxembourg", "Europe", "Western Europe", 660000, 86, "Euro", "EUR", "Luxembourgish, French, German", 2586, "UTC+01:00"], ["Madagascar", "MG", "Antananarivo", "Africa", "Eastern Africa", 30000000, 16, "Ariary", "MGA", "Malagasy, French", 587041, "UTC+03:00"], ["Malawi", "MW", "Lilongwe", "Africa", "Eastern Africa", 21000000, 11, "Malawian Kwacha", "MWK", "English, Chewa", 118484, "UTC+02:00"], ["Malaysia", "MY", "Kuala Lumpur", "Asia", "South-Eastern Asia", 34000000, 430, "Malaysian Ringgit", "MYR", "Malay", 330803, "UTC+08:00"], ["Maldives", "MV", "Mal\u00e9", "Asia", "Southern Asia", 520000, 7, "Rufiyaa", "MVR", "Dhivehi", 300, "UTC+05:00"], ["Mali", "ML", "Bamako", "Africa", "Western Africa", 23000000, 21, "West African CFA franc", "XOF", "French", 1240192, "UTC+00:00"], ["Malta", "MT", "Valletta", "Europe", "Southern Europe", 530000, 20, "Euro", "EUR", "Maltese, English", 316, "UTC+01:00"], ["Mauritius", "MU", "Port Louis", "Africa", "Eastern Africa", 1300000, 16, "Mauritian Rupee", "MUR", "English, French", 2040, "UTC+04:00"], ["Mexico", "MX", "Mexico City", "Americas", "Central America", 128000000, 1600, "Mexican Peso", "MXN", "Spanish", 1964375, "UTC-06:00"], ["Moldova", "MD", "Chi\u0219in\u0103u", "Europe", "Eastern Europe", 2500000, 17, "Moldovan Leu", "MDL", "Romanian", 33846, "UTC+02:00"], ["Mongolia", "MN", "Ulaanbaatar", "Asia", "Eastern Asia", 3400000, 20, "T\u00f6gr\u00f6g", "MNT", "Mongolian", 1564110, "UTC+08:00"], ["Morocco", "MA", "Rabat", "Africa", "Northern Africa", 37000000, 150, "Moroccan Dirham", "MAD", "Arabic, Berber", 446550, "UTC+01:00"], ["Mozambique", "MZ", "Maputo", "Africa", "Eastern Africa", 33000000, 22, "Metical", "MZN", "Portuguese", 801590, "UTC+02:00"], ["Myanmar", "MM", "Naypyidaw", "Asia", "South-Eastern Asia", 54000000, 65, "Kyat", "MMK", "Burmese", 676578, "UTC+06:30"], ["Namibia", "NA", "Windhoek", "Africa", "Southern Africa", 2600000, 13, "Namibian Dollar", "NAD", "English", 825615, "UTC+02:00"], ["Nepal", "NP", "Kathmandu", "Asia", "Southern Asia", 30000000, 42, "Nepalese Rupee", "NPR", "Nepali", 147181, "UTC+05:45"], ["Netherlands", "NL", "Amsterdam", "Europe", "Western Europe", 18000000, 1100, "Euro", "EUR", "Dutch", 41543, "UTC+01:00"], ["New Zealand", "NZ", "Wellington", "Oceania", "Australia and New Zealand", 5200000, 250, "New Zealand Dollar", "NZD", "English, Maori", 270467, "UTC+12:00"], ["Nicaragua", "NI", "Managua", "Americas", "Central America", 7000000, 18, "C\u00f3rdoba", "NIO", "Spanish", 130373, "UTC-06:00"], ["Niger", "NE", "Niamey", "Africa", "Western Africa", 27000000, 17, "West African CFA franc", "XOF", "French", 1267000, "UTC+01:00"], ["Nigeria", "NG", "Abuja", "Africa", "Western Africa", 223000000, 390, "Nigerian Naira", "NGN", "English", 923768, "UTC+01:00"], ["North Korea", "KP", "Pyongyang", "Asia", "Eastern Asia", 26000000, 15, "North Korean Won", "KPW", "Korean", 120538, "UTC+09:00"], ["Norway", "NO", "Oslo", "Europe", "Northern Europe", 5500000, 550, "Norwegian Krone", "NOK", "Norwegian", 323802, "UTC+01:00"], ["Oman", "OM", "Muscat", "Asia", "Western Asia", 5000000, 110, "Omani Rial", "OMR", "Arabic", 309500, "UTC+04:00"], ["Pakistan", "PK", "Islamabad", "Asia", "Southern Asia", 240000000, 340, "Pakistani Rupee", "PKR", "Urdu, English", 881912, "UTC+05:00"], ["Panama", "PA", "Panama City", "Americas", "Central America", 4500000, 83, "Balboa", "PAB", "Spanish", 75417, "UTC-05:00"], ["Papua New Guinea", "PG", "Port Moresby", "Oceania", "Melanesia", 10000000, 31, "Kina", "PGK", "English, Tok Pisin, Hiri Motu", 462840, "UTC+10:00"], ["Paraguay", "PY", "Asunci\u00f3n", "Americas", "South America", 6800000, 43, "Guaran\u00ed", "PYG", "Spanish, Guaran\u00ed", 406752, "UTC-04:00"], ["Peru", "PE", "Lima", "Americas", "South America", 34000000, 270, "Sol", "PEN", "Spanish", 1285216, "UTC-05:00"], ["Philippines", "PH", "Manila", "Asia", "South-Eastern Asia", 117000000, 440, "Philippine Peso", "PHP", "Filipino, English", 300000, "UTC+08:00"], ["Poland", "PL", "Warsaw", "Europe", "Eastern Europe", 38000000, 800, "Z\u0142oty", "PLN", "Polish", 312685, "UTC+01:00"], ["Portugal", "PT", "Lisbon", "Europe", "Southern Europe", 10400000, 270, "Euro", "EUR", "Portuguese", 92090, "UTC+00:00"], ["Qatar", "QA", "Doha", "Asia", "Western Asia", 27000000, 235, "Qatari Rial", "QAR", "Arabic", 11586, "UTC+03:00"], ["Romania", "RO", "Bucharest", "Europe", "Eastern Europe", 19000000, 350, "Romanian Leu", "RON", "Romanian", 238391, "UTC+02:00"], ["Russia", "RU", "Moscow", "Europe", "Eastern Europe", 144000000, 2000, "Russian Ruble", "RUB", "Russian", 17098242, "UTC+03:00"], ["Rwanda", "RW", "Kigali", "Africa", "Eastern Africa", 14000000, 14, "Rwandan Franc", "RWF", "Kinyarwanda, French, English", 26338, "UTC+02:00"], ["Saudi Arabia", "SA", "Riyadh", "Asia", "Western Asia", 37000000, 1100, "Saudi Riyal", "SAR", "Arabic", 2149690, "UTC+03:00"], ["Senegal", "SN", "Dakar", "Africa", "Western Africa", 18000000, 31, "West African CFA franc", "XOF", "French", 196722, "UTC+00:00"], ["Serbia", "RS", "Belgrade", "Europe", "Southern Europe", 6600000, 75, "Serbian Dinar", "RSD", "Serbian", 88361, "UTC+01:00"], ["Singapore", "SG", "Singapore", "Asia", "South-Eastern Asia", 6000000, 470, "Singapore Dollar", "SGD", "English, Malay, Mandarin, Tamil", 719, "UTC+08:00"], ["Slovakia", "SK", "Bratislava", "Europe", "Eastern Europe", 5400000, 130, "Euro", "EUR", "Slovak", 49037, "UTC+01:00"], ["Slovenia", "SI", "Ljubljana", "Europe", "Southern Europe", 2100000, 68, "Euro", "EUR", "Slovenian", 20273, "UTC+01:00"], ["Somalia", "SO", "Mogadishu", "Africa", "Eastern Africa", 18000000, 11, "Somali Shilling", "SOS", "Somali, Arabic", 637657, "UTC+03:00"], ["South Africa", "ZA", "Pretoria", "Africa", "Southern Africa", 60000000, 400, "South African Rand", "ZAR", "11 languages", 1221037, "UTC+02:00"], ["South Korea", "KR", "Seoul", "Asia", "Eastern Asia", 52000000, 1700, "South Korean Won", "KRW", "Korean", 100210, "UTC+09:00"], ["Spain", "ES", "Madrid", "Europe", "Southern Europe", 48000000, 1600, "Euro", "EUR", "Spanish", 505992, "UTC+01:00"], ["Sri Lanka", "LK", "Colombo", "Asia", "Southern Asia", 22000000, 80, "Sri Lankan Rupee", "LKR", "Sinhala, Tamil", 65610, "UTC+05:30"], ["Sudan", "SD", "Khartoum", "Africa", "Northern Africa", 48000000, 30, "Sudanese Pound", "SDG", "Arabic, English", 1861484, "UTC+02:00"], ["Sweden", "SE", "Stockholm", "Europe", "Northern Europe", 10500000, 600, "Swedish Krona", "SEK", "Swedish", 450295, "UTC+01:00"], ["Switzerland", "CH", "Bern", "Europe", "Western Europe", 89000000, 850, "Swiss Franc", "CHF", "German, French, Italian", 41284, "UTC+01:00"], ["Syria", "SY", "Damascus", "Asia", "Western Asia", 23000000, 12, "Syrian Pound", "SYP", "Arabic", 185180, "UTC+02:00"], ["Taiwan", "TW", "Taipei", "Asia", "Eastern Asia", 23500000, 800, "New Taiwan Dollar", "TWD", "Mandarin", 36193, "UTC+08:00"], ["Tajikistan", "TJ", "Dushanbe", "Asia", "Central Asia", 10000000, 12, "Somoni", "TJS", "Tajik", 143100, "UTC+05:00"], ["Tanzania", "TZ", "Dodoma", "Africa", "Eastern Africa", 67000000, 85, "Tanzanian Shilling", "TZS", "Swahili, English", 945087, "UTC+03:00"], ["Thailand", "TH", "Bangkok", "Asia", "South-Eastern Asia", 71000000, 500, "Thai Baht", "THB", "Thai", 513120, "UTC+07:00"], ["Tunisia", "TN", "Tunis", "Africa", "Northern Africa", 12400000, 50, "Tunisian Dinar", "TND", "Arabic", 163610, "UTC+01:00"], ["Turkey", "TR", "Ankara", "Asia", "Western Asia", 85000000, 1000, "Turkish Lira", "TRY", "Turkish", 783562, "UTC+03:00"], ["Turkmenistan", "TM", "Ashgabat", "Asia", "Central Asia", 6500000, 80, "Turkmenistan New Manat", "TMT", "Turkmen", 488100, "UTC+05:00"], ["Uganda", "XX", "Capital", "Region", "Subregion", 1000000, 10, "Currency", "CUR", "Language", 100000, "UTC+00:00"], ["Ukraine", "UA", "Kyiv", "Europe", "Eastern Europe", 37000000, 180, "Hryvnia", "UAH", "Ukrainian", 603500, "UTC+02:00"], ["United Arab Emirates", "AE", "Abu Dhabi", "Asia", "Western Asia", 9500000, 500, "UAE Dirham", "AED", "Arabic", 83600, "UTC+04:00"], ["United Kingdom", "GB", "London", "Europe", "Northern Europe", 68000000, 3300, "Pound Sterling", "GBP", "English", 242495, "UTC+00:00"], ["United States", "US", "Washington, D.C.", "Americas", "North America", 340000000, 27900, "US Dollar", "USD", "English", 9833517, "UTC-05:00"], ["Uruguay", "UY", "Montevideo", "Americas", "South America", 3400000, 77, "Uruguayan Peso", "UYU", "Spanish", 176215, "UTC-03:00"], ["Uzbekistan", "UZ", "Tashkent", "Asia", "Central Asia", 36000000, 90, "Uzbekistan Som", "UZS", "Uzbek", 447400, "UTC+05:00"], ["Venezuela", "XX", "Capital", "Region", "Subregion", 1000000, 10, "Currency", "CUR", "Language", 100000, "UTC+00:00"], ["Vietnam", "VN", "Hanoi", "Asia", "South-Eastern Asia", 100000000, 450, "\u0110\u1ed3ng", "VND", "Vietnamese", 331210, "UTC+07:00"], ["Yemen", "YE", "Sana'a", "Asia", "Western Asia", 34000000, 17, "Yemeni Rial", "YER", "Arabic", 527968, "UTC+03:00"], ["Zambia", "ZM", "Lusaka", "Africa", "Eastern Africa", 20000000, 30, "Zambian Kwacha", "ZMW", "English", 752618, "UTC+02:00"], ["Zimbabwe", "ZW", "Harare", "Africa", "Eastern Africa", 16000000, 27, "Zimbabwean Dollar", "ZWL", "16 languages", 390757, "UTC+02:00"]];
+
+        const RANK = {};
+        const WORLD_GDP = DB.reduce((sum, row) => sum + row[6], 0);
+        const WORLD_POP = DB.reduce((sum, row) => sum + row[5], 0);
+
+        function initRank() {
+            const sorted = [...DB].sort((a, b) => b[6] - a[6]);
+            sorted.forEach((row, index) => {
+                RANK[row[0]] = index + 1;
+            });
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function escAttr(str) {
+            return escHtml(str).replace(/'/g, '&#39;');
+        }
+
+        function getFlagEmoji(iso2) {
+            if (iso2 === 'XX') return '🌍';
+            return iso2.toUpperCase().replace(/./g, char => 
+                String.fromCodePoint(char.charCodeAt(0) + 127397)
+            );
+        }
+
+        function formatNum(num) {
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            return num.toLocaleString();
+        }
+
+        function getIncomeClass(gdpPerCapita) {
+            if (gdpPerCapita >= 13000) return { label: "High Income", color: "#34d399" };
+            if (gdpPerCapita >= 4500) return { label: "Upper-Middle Income", color: "#fbbf24" };
+            if (gdpPerCapita >= 1100) return { label: "Lower-Middle Income", color: "#fb923c" };
+            return { label: "Low Income", color: "#f87171" };
+        }
+
+        function renderResult(countryName) {
+            const country = DB.find(c => c[0].toLowerCase() === countryName.toLowerCase());
+            const container = document.getElementById('result-container');
+            const errorMsg = document.getElementById('error-msg');
+            
+            if (!country) {
+                container.innerHTML = '';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            errorMsg.style.display = 'none';
+            const [name, iso2, capital, region, subregion, pop, gdpB, curr, currCode, lang, area, tz] = country;
+            const rank = RANK[name];
+            const gdpPerCapita = (gdpB * 1000000000) / pop;
+            const income = getIncomeClass(gdpPerCapita);
+            
+            const gdpShare = (gdpB / WORLD_GDP) * 100;
+            const popShare = (pop / WORLD_POP) * 100;
+            const wealthIndex = Math.min(100, (gdpPerCapita / 80000) * 100);
+
+            container.innerHTML = `
+                <div class="result-section">
+                    <div class="hero-card">
+                        <div class="flag-large">${getFlagEmoji(iso2)}</div>
+                        <div class="hero-header">
+                            <h2>${escHtml(name)}</h2>
+                            <div class="tag-container">
+                                <span class="tag">${escHtml(region)}</span>
+                                <span class="tag">${escHtml(capital)}</span>
+                                <span class="tag">${escHtml(currCode)}</span>
+                            </div>
+                        </div>
+                        <div class="gdp-rank-badge">
+                            <span class="rank-label">GDP Rank</span>
+                            <span class="rank-value">#${rank}</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">GDP (Nominal)</div>
+                            <div class="stat-value">$${gdpB >= 1000 ? (gdpB/1000).toFixed(2) + 'T' : gdpB + 'B'}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">GDP Per Capita</div>
+                            <div class="stat-value">$${Math.round(gdpPerCapita).toLocaleString()}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Population</div>
+                            <div class="stat-value">${formatNum(pop)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Capital City</div>
+                            <div class="stat-value">${escHtml(capital)}</div>
+                        </div>
+                    </div>
+
+                    <div class="economy-overview">
+                        <h3>Economic & World Standing</h3>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>Global GDP Share</span>
+                                <span>${gdpShare.toFixed(2)}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${Math.max(1, gdpShare)}%"></div>
+                            </div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>World Population Share</span>
+                                <span>${popShare.toFixed(2)}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${Math.max(1, popShare)}%"></div>
+                            </div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>Wealth Per Person Index</span>
+                                <span>${Math.round(wealthIndex)}/100</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${Math.max(1, wealthIndex)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <h4>Financial Profile</h4>
+                            <div class="info-list">
+                                <div class="info-item">
+                                    <span class="info-key">Currency</span>
+                                    <span>${escHtml(curr)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">Currency Code</span>
+                                    <span>${escHtml(currCode)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">Economy Class</span>
+                                    <span class="income-tag" style="background: ${income.color}; color: #0a0e1a">${income.label}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">GDP in Trillions</span>
+                                    <span>$${(gdpB / 1000).toFixed(3)}T</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-box">
+                            <h4>Geography & Stats</h4>
+                            <div class="info-list">
+                                <div class="info-item">
+                                    <span class="info-key">Region</span>
+                                    <span>${escHtml(region)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">Subregion</span>
+                                    <span>${escHtml(subregion)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">Languages</span>
+                                    <span>${escHtml(lang)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">Area km²</span>
+                                    <span>${area.toLocaleString()}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-key">Timezone</span>
+                                    <span>${escHtml(tz)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Scroll to result on mobile
+            if (window.innerWidth < 600) {
+                container.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function setupQuickChips() {
+            const quick = ["United States", "China", "India", "Germany", "Japan", "United Kingdom", "Brazil", "Canada", "Australia", "France", "Saudi Arabia", "South Korea", "Turkey", "Mexico", "Indonesia"];
+            const container = document.getElementById('quick-chips');
+            
+            quick.forEach(name => {
+                const country = DB.find(c => c[0] === name);
+                if (country) {
+                    const chip = document.createElement('div');
+                    chip.className = 'chip';
+                    chip.dataset.name = name;
+                    chip.innerHTML = `<span>${getFlagEmoji(country[1])}</span> ${name}`;
+                    container.appendChild(chip);
+                }
+            });
+
+            container.addEventListener('click', (e) => {
+                const chip = e.target.closest('.chip');
+                if (chip) {
+                    const name = chip.dataset.name;
+                    document.getElementById('country-input').value = name;
+                    renderResult(name);
+                    document.getElementById('dropdown').style.display = 'none';
+                }
+            });
+        }
+
+        function setupSearch() {
+            const input = document.getElementById('country-input');
+            const dropdown = document.getElementById('dropdown');
+            const btn = document.getElementById('search-btn');
+
+            input.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase();
+                if (!val) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+
+                const matches = DB.filter(c => 
+                    c[0].toLowerCase().startsWith(val) || 
+                    c[0].toLowerCase().includes(val)
+                ).slice(0, 8);
+
+                if (matches.length > 0) {
+                    dropdown.innerHTML = matches.map(c => `
+                        <div class="autocomplete-item" data-name="${escAttr(c[0])}">
+                            ${getFlagEmoji(c[1])} ${escHtml(c[0])}
+                        </div>
+                    `).join('');
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            dropdown.addEventListener('click', (e) => {
+                const item = e.target.closest('.autocomplete-item');
+                if (item) {
+                    const name = item.dataset.name;
+                    input.value = name;
+                    renderResult(name);
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            btn.addEventListener('click', () => {
+                renderResult(input.value);
+                dropdown.style.display = 'none';
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    renderResult(input.value);
+                    dropdown.style.display = 'none';
+                }
+                if (e.key === 'Escape') {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target) && e.target !== input) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialization
+        window.onload = () => {
+            initRank();
+            setupQuickChips();
+            setupSearch();
+            
+            // Default load
+            renderResult("United States");
+        };
+    </script>
+</body>
+</html>
